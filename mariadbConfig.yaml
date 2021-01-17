@@ -1,0 +1,29 @@
+﻿---
+database:                   'your ESX extended database name'
+dbUser:                     'your backupuser'
+dbPwdFile:                  'C:\powershell_scripts\mariadb.pwd'
+dbHost:                     '127.0.0.1'
+dbSocket:                   'TCP'
+dbPort:                     '3306'
+mariadbPath:                'C:\Program Files\MariaDB 10.4\bin'
+backupPath:                 'C:\fivem_database_backups'
+numberofBackupsToKeep:      12
+backupCounterLogFile:       'C:\fivem_database_backups\backupCounter.log'
+errorLog:                   'C:\fivem_database_backups\error_dump.log'
+winrarPath:                 'C:\Program Files\WinRAR'
+emailUsr:                   'your gmail or other email account'
+emailPwdFile:               'C:\powershell_scripts\emailbu.pwd'
+mailFrom:                   'your_email@gmail.com'
+mailTo:
+    - 'email adress 1@gmail.com'
+    - 'email adress 2@hotmail.com'
+smtpServer:                 'smtp.gmail.com'
+smtpPort:                   587
+
+# Info voor SMTP gateways en TCP poorten
+# smtp.gmail.com :> port: 587
+# smtp.mail.yahoo.com :> port: 465
+# smtp-mail.outlook.com :> port: 587
+
+# To use gmail you have to enable the security option 'Less secure app access' in your google account
+
