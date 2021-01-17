@@ -1,112 +1,81 @@
 #########################################################################################
-##### Script om automatische backups te maken van de FiveM database in MariaDB 10.4 #####
-##### MariaDB server properties and credentials                                     #####
+##### Script to create automated backups and notifications for your FiveM database  #####
+##### in MariaDB 10.4. 
 #########################################################################################
 <#
-    Huidige versie:
-        Versie: 1.3
-        Datum:  15 januari 2021
-                1-Configuratie parameter bestand "C:\powershell_scripts\mariadbConfig.yaml" uitgebreid met key,
-                  value pairs voor de benodigde mysqldump command-line parameters
-                2-Nieuw blok: # aanmaken van een credentials object voor de sessie naar MariaDB #
-                3-Aangepast blok: # parameters die gebruikt worden bij het uitvoeren van het mysqldump.exe programma #
-                  Omdat nu ook het ww van de MariaDB sessie is encrypt, wordt er geen gebruik meer gemaakt van een
-                  apart "mariadb.cnf" bestand, maar zijn de configuratie parameters uit dat bestand opgenomen in het
-                  configuratie parameter bestand "mariadbConfig.yaml". Hierdoor zijn de config parameters ook toe-
-                  gevoegd aan de mysqldump command-line parameters
-                4-Configuratie parameter bestand "mariadb.cnf" verwijderd.
-                5-Aangepast blok: # !! Onderstaande dient vooraf eenmalig, met de hand worden aangemaakt !! #
-                  Uitleg mariadb.cnf verwijderd en uitleg mariadbConfig.yaml toegevoegd
-                  Beschrijving toegevoegd voor het eenmalig aanmaken ban het encrypte wachtwoord bestand voor
-                  de sessie naar MariaDB.
+    Current version:
+        Version: 1.3
+        Date:  January 15, 2021
+                1-Added the key value/pairs necessary for the mysqldump command-line parameters to
+                  connect to the MariaDB database in the configuration parameter file
+                  "C:\powershell_scripts\mariadbConfig.yaml"
+                2-New block: # create credential object for the MariaDB session#
+                3-Changed block: # mysqldump.exe command-line parameters #
+                  Removed the use of the native "mariadb.cnf" file because password was unencrypted.
+                  The configuration parameter file "mariadbConfig.yaml" is extended (see 1).
+                4-Removed the native "mariadb.cnf" file.
+                5-Changed block: # How to install / use: #
+                  Removed the explanation for the "mariadb.cnf" file.
+                  Added the explanation for the "mariadbConfig.yaml" file.
+                  Added the explanation to create the encrypted password file for the MariaDB connection.
                 
-        Update geschiedenis:
-        Versie: 1.2
-        Datum:  13 januari 2021
-                1-Aangepast blok: # verzamel alle bestandsnamen van de archive (rar) bestanden #
-                  Er stond nog een harde databse naam in de script regel, i.p.v. de variabele die de database
-                  naam bevat. Dir resulteerde er in dat het oudste archive bestand niet werd verwijderd.
-                2-Aangepast blok: # verzamel alle bestandsnamen van de database backup bestanden #
-                  Er stond nog een harde databse naam in de script regel, i.p.v. de variabele die de database
-                  naam bevat. Dir resulteerde er in dat het oudste database backup (.sql) bestand niet werd
-                  verwijderd.
-                3-Aangepast blok: # mail het archive bestand #
-                  De arhcief mail voorzien van een eigen subject en body voor in de mail.
+        Update history:
+        Version: 1.2
+        Date:  January 13, 2021
+                1-Changed block: # get all names for the existing archive (rar) files #
+                  Replaced the hardcoded database name into the database name variable.
+                  This was the root cause of the problem that the last archve file (.rar) was not
+                  deleted. 
+                2-Changed block: # get all names for the existing database backup (.sql) files #
+                  Replaced the hardcoded database name into the database name variable.
+                  This was the root cause of the problem that the last database backup file (.sql)
+                  was not deleted. 
+                3-Changed block: # mail archive file #
+                  Added subject en body variables for the mail.
 
-        Versie: 1.1
-        Datum:  12 januari 2021
-                1-Aangepast blok: # !! Onderstaande dient vooraf eenmalig, met de hand worden aangemaakt !! #
-                  Beschrijving toegevoegd voor het eenmalig aanmaken ban het encrypte wachtwoord bestand voor
-                  het Google -mail- account.
-                2-Aangepast blok: # Ophalen van de configuratie parameters voor het definieren van de variabelen #
-                  Variabelen niet meer hardcoded opgenomen, variabelen worden nu aangemakt op basis van de
-                  key-naam in het bestand "C:\powershell_scripts\mariadbConfig.yaml"
-                  De key-namen in het bestand "C:\powershell_scripts\mariadbConfig.yaml" moeten dus NIET worden
-                  aangepast, omdat anders het Powershell script niet meer werkt omdat het script wel de key-namen
-                  als de naam van de variabele verwacht.
-                3-Aangepast blok: # aanmaken van een credentials object voor het versturen van mail #
-                  Het wachtwoord bestand $emailPwdFile dient nu vooraf eenmalig met de hand worden aangemaakt als
-                  een encrypt wachtwoord bestand. Zie ook punt 1 van de aanpassingen in versie 1.1.
+        Version: 1.1
+        Date:  January 12, 2021
+                1-Changed block: # How to install / use: #
+                  Added the explanation to create the encrypted password file for the -mail- connection.
+                2-Changed block: # read all key/value pairs from yaml file to create variables #
+                  Variabeles are not defined in this script but based on the key/value pairs in the
+                  configuration parameter file "C:\powershell_scripts\mariadbConfig.yaml"
+                3-Changed block: # create credential object for mail connection#
+                  See aslo point 1.
 
-        Versie: 1.0
-        Datum:  11 januari 2021
-                - Initiele versie
+        Version: 1.0
+        Date:  January 11, 2021
+                - Initial version
 #>
 
 
 <#
-    ###################################################################################
-    ##### !! Onderstaande dient vooraf eenmalig, met de hand worden aangemaakt !! #####
-    ###################################################################################
+    # How to install / use: #
     
-    #####################################################################################
-    Maak vooraf een nieuwe READONLY user aan in de MariaDB server voor het backup proces
-    met onderstaande SQL query commando:
-    GRANT LOCK TABLES, SELECT ON *.* TO 'backupuser'@'%' IDENTIFIED BY 'Ti@nReadOnlyAccount!';
-
-    
-    #####################################################################################
-    Vul vooraf het onderstaande configuratie parameter bestand in:
-    C:\powershell_scripts\mariadbConfig.yaml
-
-    (in een toekomstige versie zal dit bestand met een vraag en antwoorden reeks worden
-    aangemaakt)
-    
-    #####################################################################################
-    Maak vooraf een ge-encrypt wachtwoord bestand aan voor het Google -mail- account
-
-    Just like the Windows Task Scheduler, this method will encrypt using the Windows
-    Data Protection API, which also means we fall into the same limitations of only
-    being able to access the password file with one account and only on the same
-    device that created the password file.
-    The user login credentials are essentially the key to the password file.
-    However, this method allows us to save multiple passwords and reference them in
-    our script.
-    
-    Start onderstaande Powershell regels om het wachtwoord bestand aan te maken
-    Er wordt gevraagd om de user en password gegevens.
-
-    $emailPwdFile = "C:\powershell_scripts\emailbu.pwd"
-    (get-credential).password | ConvertFrom-SecureString | set-content $emailPwdFile
-
-    #####################################################################################
-    Maak vooraf een ge-encrypt wachtwoord bestand aan voor de sessie naar MariaDB 
-
-    Start onderstaande Powershell regels om het wachtwoord bestand aan te maken
-    Er wordt gevraagd om de user en password gegevens.
-
-    $dbPwdFile = "C:\powershell_scripts\mariadb.pwd"
-    (get-credential).password | ConvertFrom-SecureString | set-content $dbPwdFile
-
-    
-    maak onderstaande bestanden beide hidden in de Windows file explorer
-    - C:\powershell_scripts\mariadb.pwd
-    - C:\powershell_scripts\emailbu.pwd
+    1 - Before first use: Create a READONLY user in the MariaDB server for the backup proces
+        with the following SQL query command:
+        GRANT LOCK TABLES, SELECT ON *.* TO 'your_backup_user'@'%' IDENTIFIED BY 'yoursecret_password';        
+    2 - Before first use: Change the configuration parameter file with your values:
+        C:\powershell_scripts\mariadbConfig.yaml
+    3 - Before first use: Create an encrypt password file for the Google -mail- account
+        Start the following Powershell command lines to create the password file, you will
+        be prompted for username and password.
+        $emailPwdFile = "C:\powershell_scripts\emailbu.pwd"
+        (get-credential).password | ConvertFrom-SecureString | set-content $emailPwdFile
+    4 - Before first use: Create an encrypt password file for the connection to the MariaDB
+        server database.
+        Start the following Powershell command lines to create the password file, you will
+        be prompted for username and password.
+        $dbPwdFile = "C:\powershell_scripts\mariadb.pwd"
+        (get-credential).password | ConvertFrom-SecureString | set-content $dbPwdFile
+    5 - Before first use: Hide the following files in the Windows file explorer
+        - C:\powershell_scripts\mariadb.pwd
+        - C:\powershell_scripts\emailbu.pwd
 
 #>
 
 ########################################################################################
-##### Ophalen van de configuratie parameters voor het definieren van de variabelen #####
+##### read all key/value pairs from yaml file to create variables                  #####
 ########################################################################################
 $mariadbConfigFileContent = Get-Content -Path C:\powershell_scripts\mariadbConfig.yaml
 #$mariadbConfigFileContent
@@ -172,8 +141,9 @@ foreach ($keyValuePair in $keyValueHash.GetEnumerator() ) {
 ##### MAIN script #####
 #######################
 
-# als het bestand "backupCounter.log" niet bestaat, wordt het aangemaakt
-# dit bestand wordt gebruikt om te tellen wanneer een nieuwe archive (rar) file moet worden aangemaakt
+# if the file "backupCounter.log" does not exist it will be created
+# this file is used to count the number of successful database backup and when to create
+# a new archive (rar) file
 if (Test-Path -Path $backupCounterLogFile) {
     $backupCounterContent = Get-Content -Path $backupCounterLogFile
     $backupCounter = [int]$backupCounterContent
@@ -184,24 +154,24 @@ else {
 }
 
 
-# aanmaken van een credentials object voor het versturen van mail
+# create credential object for the mail connection
 $emailPwd = Get-Content $emailPwdFile | ConvertTo-SecureString
 $mailCreds = New-Object System.Management.Automation.PsCredential($emailUsr,$emailPwd)
 
-# aanmaken van een credentials object voor de sessie naar MariaDB
+# create credential object for the MariaDB connection
 $dbEncPwd = Get-Content $dbPwdFile | ConvertTo-SecureString
 $dbCreds = New-Object System.Management.Automation.PsCredential($dbUser,$dbEncPwd)
 $dbPwd = (New-Object PSCredential($dbUser,$dbEncPwd)).GetNetworkCredential().Password
 
-# Datum van vandaag
+# Date of today
 $timestamp = "$(Get-Date -UFormat "%d")-$(Get-Date -UFormat "%m")-$(Get-Date -UFormat "%Y")_$(Get-Date -UFormat "%H")$(Get-Date -UFormat "%M")"
 #Write-Host $timestamp
 
-# bestandsnamen voor de backup-file en het archive bestand samenstellen
+# create the file name for the backup- and the archive files
 $backupFile = $backuppath + "\" + $database + "_" + $timestamp +".sql"
 $backupRar = $backuppath + "\" + $database + "_" + $timestamp +".rar"
 
-# parameters die gebruikt worden bij het uitvoeren van het mysqldump.exe programma
+# mysqldump.exe command-line parameters
 $mysqldumpParameters = "--host=$dbHost --protocol=$dbSocket --port=$dbPort --user=$dbUser --password=$dbPwd --log-error=$errorLog --result-file=$backupFile --databases $database"
 
 # Create backup
@@ -216,57 +186,54 @@ if ($lastLineInMysqlDumpFile -imatch "Dump completed" -and $mysqldumpErrorLog.le
     #Write-Host "Backup MySQL Success"
     $backupCounter ++
     $backupCounter | Out-File -FilePath $backupCounterLogFile
-    $mailSubject = "Backup MariaDB succesvol"
-    $mailBody = "Backup voor de FiveM MariaDB database is nu voor de $backupCounter -de keer gelukt."
+    $mailSubject = "Backup MariaDB successful"
+    $mailBody = "Backup for the FiveM MariaDB database succeeded $backupCounter times."
     Send-MailMessage -to $mailTo -From $mailFrom -Subject $mailSubject -Body $mailBody -SmtpServer $smtpServer -port $smtpPort -UseSsl -Credential $mailCreds
 }
 else {
     #Write-Host "Backup MySQL Failed"
     $mailSubject = "Backup MariaDB failed with errors"
-    $mailBody = "Backup voor de FiveM MariaDB database is gefaald, zie bijgevoegd bestand voor de error log."
+    $mailBody = "Backup for the FiveM MariaDB database failed, see attached error log file."
     Send-MailMessage -to $mailTo -From $mailFrom -Subject $mailSubject -Body $mailBody -SmtpServer $smtpServer -port $smtpPort -UseSsl -Credential $mailCreds -Attachments $errorLog
 }
 
 
-# verzamel alle bestandsnamen van de archive (rar) bestanden
+# get all names for the existing archive (rar) files
 $allRarFiles = Get-ChildItem -Path "$backuppath\$database*.rar"
 
-# archive and mail een nieuw archive bestand met alle backup files die tot nu toe zijn gemaakt
-# het aantal backups in het archive bestand is afhankelijk van het aantal dat bewaard dient te blijven
-# de variable $numberofBackupsToKeep geeft dat aantal aan
+# archive and mail a new archive file with all database backup files
 if ($backupCounter -ge $numberofBackupsToKeep) {
 
-    # verwijder eerst het oude archive bestand
+    # Delete all archive files
     foreach ($rarFile in $allRarFiles) {
         Remove-Item -Path "$backuppath\$($rarFile.name)"
     }
 
-    # parameters die gebruikt worden bij het uitvoeren van het rar.exe programma
+    # rar.exe command-line parameters 
     $winrarParameters = "a $backupRar $backupPath"
     
-    # Create archive bestand
+    # Create new archive file
     Start-Process -FilePath "$winrarPath\rar.exe" -ArgumentList $winrarParameters -ErrorAction:SilentlyContinue -Wait:$true
     
-    # zet de teller weer op nul
+    # reset succesfull backup counter
     $backupCounter = 0
     $backupCounter | Out-File -FilePath $backupCounterLogFile
     
-    # mail het archive bestand
-    $mailSubject = "Archief bestand met de laatste $numberofBackupsToKeep database backup files"
-    $mailBody = "Archief bestand met de laatste $numberofBackupsToKeep database backup files is toegevoegd aan deze mail als bijlage."
+    # mail the archive file
+    $mailSubject = "Archive file with $numberofBackupsToKeep database backup files"
+    $mailBody = "Archive file with $numberofBackupsToKeep database backup files is attached to this mail."
     Send-MailMessage -to $mailTo -From $mailFrom -Subject $mailSubject -Body $mailBody -SmtpServer $smtpServer -port $smtpPort -UseSsl -Credential $mailCreds -Attachments $backupRar
 }
 
 
-# verzamel alle bestandsnamen van de database backup bestanden
+# get all names for the existing database backup (.sql) files
 $allBackupFiles = Get-ChildItem -Path "$backuppath\$database*.sql"
 $allBackupFilesSorted = $allBackupFiles | Sort-Object -Property CreationTime -Descending
 $numberOfBackupFiles = $allBackupFilesSorted.count
 #Write-Host $allBackupFilesSorted
 
 
-# Als er meer database backup bestanden bestaan dan dat er bewaard dienen te worden,
-# dan wordt het oudste backup bestand (.sql) verwijderd
+# Delete the oldest database backup (.sql) file
 if ($allBackupFilesSorted.count -ge $numberofBackupsToKeep) {
     for ($i=$numberOfBackupFiles-1; $i -le $numberOfBackupFiles-1; $i++) {
         $fileToBeDeleted = "$backuppath" + "\" + "$($allBackupFilesSorted[$i].name)"

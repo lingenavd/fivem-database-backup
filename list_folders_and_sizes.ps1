@@ -1,17 +1,18 @@
 ﻿#########################################################################################
-##### Script om de FiveM datafolder en resources te doorlopen                       #####
-##### De foldernaam en de diskusage in MB wordt weergegeven                         #####
+##### Script to parse the FiveM data and resource folders                           #####
+##### The folder name and diskusage will be printed on the screen                   #####
 #########################################################################################
 <#
-    Huidige versie:
+    Current version:
 
         Versie: 1.0
-        Datum:  15 januari 2021
-                - Initiele versie
+        Date:  January 15, 2021
+                - Initial version
 #>
 
+#change this list with the folders you want to parse
 $MultipleFoldersToParse = ("D:\FXServer\server-data", "D:\FXServer\server-data\resources")
-"server-data:"
+
 foreach ($folderToParse in $MultipleFoldersToParse) {
     Set-Location -Path $folderToParse
 

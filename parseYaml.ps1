@@ -1,23 +1,22 @@
 ﻿########################################################################################
-##### Ophalen van de configuratie parameters voor het definieren van de variabelen #####
+##### Script to parse a Yaml file and convert the key, value pairs to Powershell   #####
+##### variables
 ########################################################################################
 <#
-    Huidige versie:
-        Versie: 1.1
-        Datum:  12 januari 2021
-                1-Aangepast:
-                  De list vanuit de yaml file was eerst hardcoded, omdat er maar 1 list
-                  in de yaml file stond en deze in het script hardcoded naar de $mailto
-                  variabele werd vertaald.
-                  Dat is nu niet meer nodig, alle list keys worden nu ook als variabele
-                  aangemaakt.
-                  Nu kunnen er meerdere lists in de yaml file voorkomen en de list key
-                  wordt automatisch vertaald naar een array variabele.
+    Current version:
+        Version: 1.1
+        Date:  January 12, 2021
+                1-Changed:
+                  The Powershell variables were hardcoded and only the values were used
+                  from the yaml file. Now all keys from the yaml file are created as
+                  Powershell variabeles with the value from the yaml file.
+                  Now, multiple lists can exist in the yaml file, the list key will also
+                  be created and translated to an array variabele.
                 
-        Update geschiedenis:
-        Versie: 1.0
-        Datum:  11 januari 2021
-                - Initiele versie
+        Update history:
+        Version: 1.0
+        Date:  January 11, 2021
+                - Initial version
     
 #>
 
