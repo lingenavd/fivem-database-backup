@@ -4,6 +4,12 @@
 #########################################################################################
 <#
     Current version:
+        Version: 1.4
+        Date:  February 2, 2021
+                1-Changed block: # Check succesfull backup #
+                  After a failed database backup the errolog file was not removed. This will result
+                  in getting only failed database backup mail, even if the database backup was successful.
+                  Added code to remove the errorlog file after it was attached to the fail mail.
         Version: 1.3
         Date:  January 15, 2021
                 1-Added the key value/pairs necessary for the mysqldump command-line parameters to
