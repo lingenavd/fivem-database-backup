@@ -201,6 +201,7 @@ else {
     $mailSubject = "Backup MariaDB failed with errors"
     $mailBody = "Backup for the FiveM MariaDB database failed, see attached error log file."
     Send-MailMessage -to $mailTo -From $mailFrom -Subject $mailSubject -Body $mailBody -SmtpServer $smtpServer -port $smtpPort -UseSsl -Credential $mailCreds -Attachments $errorLog
+    Remove-Item -Path $errorLog -Confirm:$false -Force:$true -ErrorAction:SilentlyContinue
 }
 
 
